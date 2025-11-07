@@ -13,6 +13,7 @@ import MyAppointments from './pages/Appointments/MyAppointments';
 import UserProfile from './pages/Profile/UserProfile';
 import TherapiesList from './pages/Therapies/TherapiesList.jsx';
 import NotificationCenter from './pages/Notifications/NotificationCenter.jsx';
+import TherapyProgress from './pages/Progress/TherapyProgress.jsx';
 import { USER_ROLES } from './types';
 
 function App() {
@@ -20,53 +21,35 @@ function App() {
     <Router>
       <AuthProvider>
         <div className="App">
+          {/* 🔔 Toast Notifications */}
           <Toaster
             position="top-right"
             toastOptions={{
               duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-              success: {
-                duration: 3000,
-                theme: {
-                  primary: '#4aed88',
-                },
-              },
+              style: { background: '#363636', color: '#fff' },
+              success: { duration: 3000, theme: { primary: '#4aed88' } },
             }}
           />
-          
+
           <Routes>
-            {/* Public Routes */}
+            {/* 🌍 Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            
-            {/* Protected Routes */}
+
+            {/* 🏠 Unified Dashboard Route (Patient / Doctor / Admin) */}
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* Patient Routes */}
-            <Route
-              path="/appointments"
-              element={
                 <ProtectedRoute requiredRoles={[USER_ROLES.PATIENT, USER_ROLES.DOCTOR, USER_ROLES.ADMIN]}>
                   <Layout>
-                    <MyAppointments />
+                    <Dashboard /> {/* It will auto-select based on user.role */}
                   </Layout>
                 </ProtectedRoute>
               }
             />
-            
+
+            {/* 👩‍🦰 Patient Routes */}
             <Route
               path="/book-appointment"
               element={
@@ -77,18 +60,29 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
+            <Route
+              path="/appointments"
+              element={
+                <ProtectedRoute requiredRoles={[USER_ROLES.PATIENT, USER_ROLES.DOCTOR, USER_ROLES.ADMIN]}>
+                  <Layout>
+                    <MyAppointments />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/therapy-progress"
               element={
                 <ProtectedRoute requiredRoles={[USER_ROLES.PATIENT]}>
                   <Layout>
-                    <div>Therapy Progress Page</div>
+                    <TherapyProgress />
                   </Layout>
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/therapies"
               element={
@@ -99,8 +93,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
-            {/* Doctor Routes */}
+
+            {/* 👨‍⚕️ Doctor Routes */}
             <Route
               path="/patients"
               element={
@@ -111,7 +105,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/therapy-sessions"
               element={
@@ -122,7 +116,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/schedule"
               element={
@@ -133,7 +127,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/reports"
               element={
@@ -144,8 +138,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
-            {/* Admin Routes */}
+
+            {/* 🧑‍💼 Admin Routes */}
             <Route
               path="/users"
               element={
@@ -156,7 +150,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/analytics"
               element={
@@ -167,8 +161,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
-            {/* Common Routes */}
+
+            {/* 🔔 Common Routes */}
             <Route
               path="/notifications"
               element={
@@ -179,7 +173,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/profile"
               element={
@@ -190,7 +184,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/settings"
               element={
@@ -201,8 +195,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
-            {/* Fallback route */}
+
+            {/* 🚧 Fallback route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

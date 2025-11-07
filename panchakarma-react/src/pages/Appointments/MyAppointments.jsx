@@ -1,126 +1,93 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Calendar, Clock, User, Phone, MapPin, CheckCircle, AlertCircle, XCircle, Plus, Filter, Search, Download } from 'lucide-react';
+import { Calendar, Clock, User, FileText, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const Container = styled.div`
-  padding: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
 `;
 
 const Header = styled.div`
-  background: linear-gradient(135deg, #007a5f 0%, #00b88a 100%);
-  color: white;
-  padding: 2rem;
-  border-radius: 15px;
   margin-bottom: 2rem;
   
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    
-    @media (max-width: 768px) {
-      flex-direction: column;
-      gap: 1rem;
-    }
-  }
-  
   h1 {
-    margin: 0 0 0.5rem 0;
-    font-size: 2rem;
-    font-weight: 600;
+    color: #007a5f;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
   }
   
   p {
-    margin: 0;
-    opacity: 0.9;
+    color: #666;
     font-size: 1.1rem;
   }
 `;
 
-const ActionButton = styled.button`
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  color: white;
+const StatsBar = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+`;
+
+const StatCard = styled.div`
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  
+  .stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #007a5f;
+    margin-bottom: 0.5rem;
+  }
+  
+  .stat-label {
+    color: #666;
+    font-size: 0.875rem;
+  }
+`;
+
+const FilterTabs = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+`;
+
+const Tab = styled.button`
   padding: 0.75rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 600;
+  border: 2px solid ${props => props.active ? '#007a5f' : '#e0e0e0'};
+  background: ${props => props.active ? '#007a5f' : 'white'};
+  color: ${props => props.active ? 'white' : '#666'};
+  border-radius: 25px;
   cursor: pointer;
+  font-weight: 600;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-  }
-`;
-
-const FilterSection = styled.div`
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
-  
-  .filter-row {
-    display: grid;
-    grid-template-columns: 1fr 200px 200px auto;
-    gap: 1rem;
-    align-items: end;
-    
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-    }
-  }
-`;
-
-const SearchInput = styled.div`
-  position: relative;
-  
-  input {
-    width: 100%;
-    padding: 0.75rem 1rem 0.75rem 2.5rem;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
-    
-    &:focus {
-      outline: none;
-      border-color: #007a5f;
-    }
-  }
-  
-  .search-icon {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #666;
-  }
-`;
-
-const FilterSelect = styled.select`
-  width: 100%;
-  padding: 0.75rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 1rem;
-  background: white;
-  cursor: pointer;
-  
-  &:focus {
-    outline: none;
     border-color: #007a5f;
+    background: ${props => props.active ? '#005a45' : 'rgba(0, 122, 95, 0.1)'};
+  }
+  
+  .count {
+    background: ${props => props.active ? 'rgba(255,255,255,0.3)' : '#007a5f'};
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
   }
 `;
 
-const AppointmentGrid = styled.div`
+const AppointmentsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 1.5rem;
 `;
 
@@ -129,196 +96,252 @@ const AppointmentCard = styled.div`
   border-radius: 15px;
   padding: 1.5rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid ${props => {
-    switch (props.status) {
+  border-left: 5px solid ${props => {
+    switch(props.status) {
       case 'pending': return '#ffc107';
-      case 'scheduled': return '#007a5f';
-      case 'completed': return '#28a745';
+      case 'confirmed': return '#28a745';
+      case 'completed': return '#007bff';
       case 'cancelled': return '#dc3545';
-      default: return '#6c757d';
+      default: return '#e0e0e0';
     }
   }};
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   
   &:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
   }
 `;
 
-const StatusBadge = styled.span`
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  
-  background: ${props => {
-    switch (props.status) {
-      case 'pending': return 'rgba(255, 193, 7, 0.1)';
-      case 'scheduled': return 'rgba(0, 122, 95, 0.1)';
-      case 'completed': return 'rgba(40, 167, 69, 0.1)';
-      case 'cancelled': return 'rgba(220, 53, 69, 0.1)';
-      default: return 'rgba(108, 117, 125, 0.1)';
-    }
-  }};
-  
-  color: ${props => {
-    switch (props.status) {
-      case 'pending': return '#ffc107';
-      case 'scheduled': return '#007a5f';
-      case 'completed': return '#28a745';
-      case 'cancelled': return '#dc3545';
-      default: return '#6c757d';
-    }
-  }};
-`;
-
-const AppointmentHeader = styled.div`
+const CardHeader = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: start;
   margin-bottom: 1rem;
 `;
 
 const TherapyName = styled.h3`
-  margin: 0 0 0.5rem 0;
   color: #333;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.3rem;
+  margin: 0 0 0.5rem 0;
 `;
 
-const AppointmentDetail = styled.div`
-  display: flex;
+const StatusBadge = styled.span`
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
-  color: #666;
-  font-size: 0.9rem;
+  background: ${props => {
+    switch(props.status) {
+      case 'pending': return '#fff3cd';
+      case 'confirmed': return '#d4edda';
+      case 'completed': return '#d1ecf1';
+      case 'cancelled': return '#f8d7da';
+      default: return '#e0e0e0';
+    }
+  }};
+  color: ${props => {
+    switch(props.status) {
+      case 'pending': return '#856404';
+      case 'confirmed': return '#155724';
+      case 'completed': return '#0c5460';
+      case 'cancelled': return '#721c24';
+      default: return '#666';
+    }
+  }};
+`;
+
+const CardBody = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+`;
+
+const InfoItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   
   svg {
     color: #007a5f;
+    flex-shrink: 0;
+  }
+  
+  .info-content {
+    .label {
+      font-size: 0.875rem;
+      color: #999;
+      margin-bottom: 0.25rem;
+    }
+    
+    .value {
+      font-size: 1rem;
+      color: #333;
+      font-weight: 500;
+    }
   }
 `;
 
-const AppointmentActions = styled.div`
-  display: flex;
-  gap: 0.5rem;
+const NotesSection = styled.div`
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 10px;
   margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #f0f0f0;
+  
+  .notes-label {
+    font-size: 0.875rem;
+    color: #999;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .notes-content {
+    color: #666;
+    line-height: 1.6;
+  }
 `;
 
-const ActionBtn = styled.button`
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 500;
+const CardFooter = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+`;
+
+const ActionButton = styled.button`
+  padding: 0.625rem 1.25rem;
+  border: 2px solid ${props => props.variant === 'danger' ? '#dc3545' : '#007a5f'};
+  background: ${props => props.variant === 'danger' ? 'white' : props.variant === 'outline' ? 'white' : '#007a5f'};
+  color: ${props => props.variant === 'danger' ? '#dc3545' : props.variant === 'outline' ? '#007a5f' : 'white'};
+  border-radius: 8px;
   cursor: pointer;
+  font-weight: 600;
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   
-  ${props => props.variant === 'primary' && `
-    background: #007a5f;
+  &:hover {
+    background: ${props => props.variant === 'danger' ? '#dc3545' : '#007a5f'};
     color: white;
-    
-    &:hover {
-      background: #005a45;
-    }
-  `}
+    transform: translateY(-2px);
+  }
   
-  ${props => props.variant === 'secondary' && `
-    background: #f8f9fa;
-    color: #666;
-    border: 1px solid #e0e0e0;
-    
-    &:hover {
-      background: #e9ecef;
-    }
-  `}
-  
-  ${props => props.variant === 'danger' && `
-    background: #dc3545;
-    color: white;
-    
-    &:hover {
-      background: #c82333;
-    }
-  `}
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
 `;
 
 const EmptyState = styled.div`
   text-align: center;
-  padding: 3rem 1rem;
-  color: #666;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   
-  .empty-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 1rem;
-    opacity: 0.3;
+  svg {
+    margin-bottom: 1.5rem;
+    opacity: 0.5;
   }
   
   h3 {
-    margin: 0 0 0.5rem 0;
     color: #333;
+    margin-bottom: 0.5rem;
   }
   
   p {
-    margin: 0 0 2rem 0;
+    color: #666;
+    margin-bottom: 2rem;
   }
 `;
 
-const LoadingSpinner = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
+const BookButton = styled.button`
+  padding: 1rem 2rem;
+  background: #007a5f;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #005a45;
+    transform: translateY(-2px);
+  }
+`;
+
+const LoadingState = styled.div`
+  text-align: center;
   padding: 3rem;
-  
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid #f0f0f0;
-    border-top: 3px solid #007a5f;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+  color: #666;
 `;
 
 const MyAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    confirmed: 0,
+    completed: 0,
+    cancelled: 0
+  });
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAppointments();
-  }, [filter]);
+  }, [activeFilter]);
 
   const fetchAppointments = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3002/api/appointments/my-appointments?status=${filter}`, {
+      const statusParam = activeFilter !== 'all' ? `?status=${activeFilter}` : '';
+      
+      const response = await fetch(`http://localhost:3002/api/appointments/my-appointments${statusParam}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch appointments');
+      }
+
+      const data = await response.json();
+      setAppointments(data.appointments || []);
       
-      if (response.ok) {
-        const data = await response.json();
-        setAppointments(data.appointments || []);
-      } else {
-        toast.error('Failed to fetch appointments');
+      // Calculate stats from all appointments
+      if (activeFilter === 'all') {
+        const allResponse = await fetch('http://localhost:3002/api/appointments/my-appointments', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const allData = await allResponse.json();
+        const all = allData.appointments || [];
+        
+        setStats({
+          total: all.length,
+          pending: all.filter(a => a.status === 'pending').length,
+          confirmed: all.filter(a => a.status === 'confirmed').length,
+          completed: all.filter(a => a.status === 'completed').length,
+          cancelled: all.filter(a => a.status === 'cancelled').length
+        });
       }
     } catch (error) {
       console.error('Error fetching appointments:', error);
-      toast.error('Failed to fetch appointments');
+      toast.error('Failed to load appointments');
     } finally {
       setLoading(false);
     }
@@ -328,7 +351,7 @@ const MyAppointments = () => {
     if (!window.confirm('Are you sure you want to cancel this appointment?')) {
       return;
     }
-    
+
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:3002/api/appointments/${appointmentId}`, {
@@ -337,188 +360,210 @@ const MyAppointments = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-      
-      if (response.ok) {
-        toast.success('Appointment cancelled successfully');
-        fetchAppointments();
-      } else {
-        toast.error('Failed to cancel appointment');
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel appointment');
       }
+
+      toast.success('Appointment cancelled successfully');
+      fetchAppointments();
     } catch (error) {
       console.error('Error cancelling appointment:', error);
       toast.error('Failed to cancel appointment');
     }
   };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-IN', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const formatTime = (time) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-IN', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
-  const filteredAppointments = appointments.filter(appointment =>
-    appointment.therapy?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    appointment.doctor?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const getStatusIcon = (status) => {
-    switch (status) {
-      case 'pending': return <Clock size={16} />;
-      case 'scheduled': return <CheckCircle size={16} />;
-      case 'completed': return <CheckCircle size={16} />;
-      case 'cancelled': return <XCircle size={16} />;
-      default: return <AlertCircle size={16} />;
+    switch(status) {
+      case 'pending':
+        return <AlertCircle size={18} />;
+      case 'confirmed':
+        return <CheckCircle size={18} />;
+      case 'completed':
+        return <CheckCircle size={18} />;
+      case 'cancelled':
+        return <XCircle size={18} />;
+      default:
+        return <AlertCircle size={18} />;
     }
   };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return 'N/A';
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  if (loading) {
+    return <Container><LoadingState>Loading your appointments...</LoadingState></Container>;
+  }
 
   return (
     <Container>
       <Header>
-        <div className="header-content">
-          <div>
-            <h1>My Appointments 📅</h1>
-            <p>Manage and track your therapy sessions</p>
-          </div>
-          <ActionButton onClick={() => window.location.href = '/book-appointment'}>
-            <Plus size={20} />
-            Book New Appointment
-          </ActionButton>
-        </div>
+        <h1>My Appointments 📅</h1>
+        <p>View and manage all your therapy sessions</p>
       </Header>
 
-      <FilterSection>
-        <div className="filter-row">
-          <SearchInput>
-            <Search className="search-icon" size={16} />
-            <input
-              type="text"
-              placeholder="Search appointments by therapy or doctor..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </SearchInput>
-          
-          <FilterSelect 
-            value={filter} 
-            onChange={(e) => setFilter(e.target.value)}
-          >
-            <option value="all">All Appointments</option>
-            <option value="pending">Pending</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </FilterSelect>
-          
-          <ActionBtn variant="secondary">
-            <Download size={16} style={{ marginRight: '0.5rem' }} />
-            Export
-          </ActionBtn>
-        </div>
-      </FilterSection>
+      {activeFilter === 'all' && stats.total > 0 && (
+        <StatsBar>
+          <StatCard>
+            <div className="stat-value">{stats.total}</div>
+            <div className="stat-label">Total Appointments</div>
+          </StatCard>
+          <StatCard>
+            <div className="stat-value">{stats.pending}</div>
+            <div className="stat-label">Pending Approval</div>
+          </StatCard>
+          <StatCard>
+            <div className="stat-value">{stats.confirmed}</div>
+            <div className="stat-label">Confirmed</div>
+          </StatCard>
+          <StatCard>
+            <div className="stat-value">{stats.completed}</div>
+            <div className="stat-label">Completed</div>
+          </StatCard>
+        </StatsBar>
+      )}
 
-      {loading ? (
-        <LoadingSpinner>
-          <div className="spinner"></div>
-        </LoadingSpinner>
-      ) : filteredAppointments.length === 0 ? (
+      <FilterTabs>
+        <Tab active={activeFilter === 'all'} onClick={() => setActiveFilter('all')}>
+          All Appointments
+          {activeFilter === 'all' && <span className="count">{stats.total}</span>}
+        </Tab>
+        <Tab active={activeFilter === 'pending'} onClick={() => setActiveFilter('pending')}>
+          ⏳ Pending
+          {activeFilter === 'all' && <span className="count">{stats.pending}</span>}
+        </Tab>
+        <Tab active={activeFilter === 'confirmed'} onClick={() => setActiveFilter('confirmed')}>
+          ✅ Confirmed
+          {activeFilter === 'all' && <span className="count">{stats.confirmed}</span>}
+        </Tab>
+        <Tab active={activeFilter === 'completed'} onClick={() => setActiveFilter('completed')}>
+          ✨ Completed
+          {activeFilter === 'all' && <span className="count">{stats.completed}</span>}
+        </Tab>
+        <Tab active={activeFilter === 'cancelled'} onClick={() => setActiveFilter('cancelled')}>
+          ❌ Cancelled
+          {activeFilter === 'all' && <span className="count">{stats.cancelled}</span>}
+        </Tab>
+      </FilterTabs>
+
+      {appointments.length === 0 ? (
         <EmptyState>
-          <Calendar className="empty-icon" />
-          <h3>No appointments found</h3>
-          <p>You haven't booked any appointments yet. Start your wellness journey today!</p>
-          <ActionBtn 
-            variant="primary" 
-            onClick={() => window.location.href = '/book-appointment'}
-          >
+          <Calendar size={64} color="#ccc" />
+          <h3>No Appointments Found</h3>
+          <p>
+            {activeFilter === 'all' 
+              ? "You haven't booked any appointments yet. Start your wellness journey today!"
+              : `You don't have any ${activeFilter} appointments.`
+            }
+          </p>
+          <BookButton onClick={() => navigate('/book-appointment')}>
             Book Your First Appointment
-          </ActionBtn>
+          </BookButton>
         </EmptyState>
       ) : (
-        <AppointmentGrid>
-          {filteredAppointments.map(appointment => (
+        <AppointmentsGrid>
+          {appointments.map(appointment => (
             <AppointmentCard key={appointment.id} status={appointment.status}>
-              <AppointmentHeader>
+              <CardHeader>
                 <div>
-                  <TherapyName>{appointment.therapy?.name}</TherapyName>
+                  <TherapyName>{appointment.therapy_name}</TherapyName>
                   <StatusBadge status={appointment.status}>
                     {getStatusIcon(appointment.status)}
-                    {appointment.status}
+                    {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                   </StatusBadge>
                 </div>
-              </AppointmentHeader>
+              </CardHeader>
 
-              <AppointmentDetail>
-                <Calendar size={16} />
-                <span>{formatDate(appointment.preferredDate)}</span>
-              </AppointmentDetail>
+              <CardBody>
+                <InfoItem>
+                  <Calendar size={20} />
+                  <div className="info-content">
+                    <div className="label">Date</div>
+                    <div className="value">{formatDate(appointment.appointment_date)}</div>
+                  </div>
+                </InfoItem>
 
-              <AppointmentDetail>
-                <Clock size={16} />
-                <span>{formatTime(appointment.preferredTime)}</span>
-              </AppointmentDetail>
+                <InfoItem>
+                  <Clock size={20} />
+                  <div className="info-content">
+                    <div className="label">Time</div>
+                    <div className="value">{formatTime(appointment.appointment_time)}</div>
+                  </div>
+                </InfoItem>
 
-              {appointment.doctor && (
-                <AppointmentDetail>
-                  <User size={16} />
-                  <span>{appointment.doctor.name}</span>
-                </AppointmentDetail>
-              )}
+                <InfoItem>
+                  <Clock size={20} />
+                  <div className="info-content">
+                    <div className="label">Duration</div>
+                    <div className="value">{appointment.duration || 'N/A'}</div>
+                  </div>
+                </InfoItem>
 
-              <AppointmentDetail>
-                <Phone size={16} />
-                <span>Duration: {appointment.therapy?.duration}</span>
-              </AppointmentDetail>
+                {appointment.doctor_name && (
+                  <InfoItem>
+                    <User size={20} />
+                    <div className="info-content">
+                      <div className="label">Doctor</div>
+                      <div className="value">{appointment.doctor_name}</div>
+                    </div>
+                  </InfoItem>
+                )}
+
+                <InfoItem>
+                  <FileText size={20} />
+                  <div className="info-content">
+                    <div className="label">Price</div>
+                    <div className="value">₹{appointment.price}</div>
+                  </div>
+                </InfoItem>
+              </CardBody>
 
               {appointment.notes && (
-                <AppointmentDetail style={{ marginTop: '0.5rem', fontStyle: 'italic' }}>
-                  <span>"{appointment.notes}"</span>
-                </AppointmentDetail>
+                <NotesSection>
+                  <div className="notes-label">
+                    <FileText size={16} />
+                    Notes
+                  </div>
+                  <div className="notes-content">{appointment.notes}</div>
+                </NotesSection>
               )}
 
-              <AppointmentActions>
-                {appointment.status === 'pending' || appointment.status === 'scheduled' ? (
-                  <>
-                    <ActionBtn variant="secondary">
-                      Reschedule
-                    </ActionBtn>
-                    <ActionBtn 
-                      variant="danger"
-                      onClick={() => handleCancelAppointment(appointment.id)}
-                    >
-                      Cancel
-                    </ActionBtn>
-                  </>
-                ) : appointment.status === 'completed' ? (
-                  <>
-                    <ActionBtn variant="primary">
-                      Book Again
-                    </ActionBtn>
-                    <ActionBtn variant="secondary">
-                      Download Receipt
-                    </ActionBtn>
-                  </>
-                ) : (
-                  <ActionBtn 
-                    variant="primary"
-                    onClick={() => window.location.href = '/book-appointment'}
+              <CardFooter>
+                {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
+                  <ActionButton 
+                    variant="danger"
+                    onClick={() => handleCancelAppointment(appointment.id)}
                   >
-                    Book New Appointment
-                  </ActionBtn>
+                    <XCircle size={18} />
+                    Cancel Appointment
+                  </ActionButton>
                 )}
-              </AppointmentActions>
+
+                {appointment.status === 'completed' && (
+                  <ActionButton variant="outline" disabled>
+                    <CheckCircle size={18} />
+                    Session Completed
+                  </ActionButton>
+                )}
+              </CardFooter>
             </AppointmentCard>
           ))}
-        </AppointmentGrid>
+        </AppointmentsGrid>
       )}
     </Container>
   );

@@ -303,15 +303,23 @@ const BookAppointment = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3002/api/appointments/available-slots?date=${date}`, {
+      const response = await fetch(`http://localhost:3002/api/appointments/slots/available?date=${date}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+      
+      if (!response.ok) {
+        console.error('Failed to fetch slots:', response.status);
+        setAvailableSlots([]);
+        return;
+      }
+      
       const data = await response.json();
       setAvailableSlots(data.availableSlots || []);
     } catch (error) {
       console.error('Error fetching slots:', error);
+      setAvailableSlots([]);
     }
   };
 
@@ -349,13 +357,23 @@ const BookAppointment = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      
+      // Map frontend field names to backend field names
+      const appointmentData = {
+        therapyId: formData.therapyId,
+        appointmentDate: formData.preferredDate,
+        appointmentTime: formData.preferredTime,
+        notes: formData.notes,
+        phone: formData.phone
+      };
+      
       const response = await fetch('http://localhost:3002/api/appointments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(appointmentData)
       });
 
       if (response.ok) {
