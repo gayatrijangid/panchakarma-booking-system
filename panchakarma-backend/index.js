@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const { testConnection } = require('./config/database');
+const schedulerService = require('./services/schedulerService');
 
 dotenv.config();
 
@@ -28,6 +29,8 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/whatsapp', require('./routes/whatsapp'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/settings', require('./routes/settings'));
+app.use('/api/therapy-info', require('./routes/therapy-info'));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -62,4 +65,7 @@ app.listen(PORT, async () => {
   
   // Test database connection
   await testConnection();
+  
+  // Start notification scheduler
+  schedulerService.start();
 });

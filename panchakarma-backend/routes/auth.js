@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
+const notificationService = require('../services/notificationService');
 
 const router = express.Router();
 
@@ -51,6 +52,14 @@ router.post('/signup', async (req, res) => {
       JWT_SECRET,
       { expiresIn: '24h' }
     );
+
+    // Send welcome notification
+    try {
+      await notificationService.sendWelcomeNotification(userId, name);
+    } catch (notificationError) {
+      console.error('Welcome notification error:', notificationError);
+      // Don't fail registration if notification fails
+    }
 
     // Return user data
     res.status(201).json({

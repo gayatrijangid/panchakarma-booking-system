@@ -1,9 +1,14 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { therapies } = require('../data/storage');
+const { pool } = require('../config/database');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
+
+// Helper function to get database connection
+const getConnection = async () => {
+  return await pool.getConnection();
+};
 
 // Middleware to verify JWT token (optional for some routes)
 const authenticateToken = (req, res, next) => {
@@ -24,38 +29,40 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Get all therapies (public)
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { category, search, available } = req.query;
-    let filteredTherapies = [...therapies];
+    const connection = await getConnection();
+    
+    let query = 'SELECT * FROM therapies WHERE 1=1';
+    const params = [];
 
     // Filter by category
     if (category && category !== 'all') {
-      filteredTherapies = filteredTherapies.filter(therapy => 
-        therapy.category.toLowerCase() === category.toLowerCase()
-      );
+      query += ' AND category = ?';
+      params.push(category);
     }
 
     // Search by name or description
     if (search) {
-      const searchLower = search.toLowerCase();
-      filteredTherapies = filteredTherapies.filter(therapy =>
-        therapy.name.toLowerCase().includes(searchLower) ||
-        therapy.description.toLowerCase().includes(searchLower) ||
-        therapy.benefits.some(benefit => benefit.toLowerCase().includes(searchLower))
-      );
+      query += ' AND (name LIKE ? OR description LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
     }
 
     // Filter by availability
     if (available !== undefined) {
-      filteredTherapies = filteredTherapies.filter(therapy => 
-        therapy.availability === (available === 'true')
-      );
+      query += ' AND availability = ?';
+      params.push(available === 'true' ? 1 : 0);
     }
 
+    query += ' ORDER BY name ASC';
+
+    const [therapies] = await connection.execute(query, params);
+    connection.release();
+
     res.json({
-      therapies: filteredTherapies,
-      total: filteredTherapies.length
+      therapies: therapies,
+      total: therapies.length
     });
   } catch (error) {
     console.error('Get therapies error:', error);
@@ -64,16 +71,23 @@ router.get('/', (req, res) => {
 });
 
 // Get therapy by ID
-router.get('/:therapyId', (req, res) => {
+router.get('/:therapyId', async (req, res) => {
   try {
     const { therapyId } = req.params;
-    const therapy = therapies.find(t => t.id === parseInt(therapyId));
+    const connection = await getConnection();
+    
+    const [therapies] = await connection.execute(
+      'SELECT * FROM therapies WHERE id = ?',
+      [therapyId]
+    );
+    
+    connection.release();
 
-    if (!therapy) {
+    if (therapies.length === 0) {
       return res.status(404).json({ message: 'Therapy not found' });
     }
 
-    res.json(therapy);
+    res.json(therapies[0]);
   } catch (error) {
     console.error('Get therapy error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -190,14 +204,18 @@ router.delete('/:therapyId', authenticateToken, (req, res) => {
 });
 
 // Get therapy categories
-router.get('/categories/list', (req, res) => {
+router.get('/categories/list', async (req, res) => {
   try {
-    const categories = [...new Set(therapies.map(therapy => therapy.category))];
+    const connection = await getConnection();
+    
+    const [categories] = await connection.execute(
+      'SELECT category as name, COUNT(*) as count FROM therapies WHERE availability = 1 GROUP BY category'
+    );
+    
+    connection.release();
+    
     res.json({
-      categories: categories.map(category => ({
-        name: category,
-        count: therapies.filter(t => t.category === category && t.availability).length
-      }))
+      categories: categories
     });
   } catch (error) {
     console.error('Get categories error:', error);

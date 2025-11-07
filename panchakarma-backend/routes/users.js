@@ -1,10 +1,42 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { users } = require('../data/storage');
+const { pool } = require('../config/database');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
+
+// Helper function to get database connection
+const getConnection = async () => {
+  return await pool.getConnection();
+};
+
+// Get all active doctors (public endpoint)
+router.get('/doctors', async (req, res) => {
+  try {
+    const connection = await getConnection();
+    const [doctors] = await connection.execute(
+      `SELECT 
+        id, 
+        name, 
+        email, 
+        phone, 
+        specialization, 
+        experience, 
+        qualifications, 
+        about
+      FROM users 
+      WHERE role = 'doctor' AND status = 'active'
+      ORDER BY name ASC`
+    );
+    
+    connection.release();
+    res.json(doctors);
+  } catch (error) {
+    console.error('Get doctors error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
@@ -25,16 +57,21 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Get user profile
-router.get('/profile', authenticateToken, (req, res) => {
+router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const user = users.find(u => u.id === req.user.userId);
-    if (!user) {
+    const connection = await getConnection();
+    const [users] = await connection.execute(
+      'SELECT id, name, email, phone, role, address, date_of_birth as dateOfBirth, emergency_contact as emergencyContact, avatar, created_at as createdAt, updated_at as updatedAt FROM users WHERE id = ?',
+      [req.user.userId]
+    );
+    
+    if (users.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    const { password, ...userProfile } = user;
-    res.json(userProfile);
+    res.json(users[0]);
   } catch (error) {
+    console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -43,38 +80,68 @@ router.get('/profile', authenticateToken, (req, res) => {
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
     const { name, email, phone, address, dateOfBirth, emergencyContact } = req.body;
+    const connection = await getConnection();
     
-    const userIndex = users.findIndex(u => u.id === req.user.userId);
-    if (userIndex === -1) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
     // Check if email is already taken by another user
-    if (email && email !== users[userIndex].email) {
-      const emailExists = users.some(u => u.email === email && u.id !== req.user.userId);
-      if (emailExists) {
+    if (email) {
+      const [existingUsers] = await connection.execute(
+        'SELECT id FROM users WHERE email = ? AND id != ?',
+        [email, req.user.userId]
+      );
+      
+      if (existingUsers.length > 0) {
         return res.status(400).json({ message: 'Email already exists' });
       }
     }
 
-    // Update user data
-    const updatedUser = {
-      ...users[userIndex],
-      name: name || users[userIndex].name,
-      email: email || users[userIndex].email,
-      phone: phone || users[userIndex].phone,
-      address: address || users[userIndex].address,
-      dateOfBirth: dateOfBirth || users[userIndex].dateOfBirth,
-      emergencyContact: emergencyContact || users[userIndex].emergencyContact,
-      updatedAt: new Date()
-    };
+    // Build update query dynamically
+    const updates = [];
+    const values = [];
 
-    users[userIndex] = updatedUser;
+    if (name !== undefined) {
+      updates.push('name = ?');
+      values.push(name);
+    }
+    if (email !== undefined) {
+      updates.push('email = ?');
+      values.push(email);
+    }
+    if (phone !== undefined) {
+      updates.push('phone = ?');
+      values.push(phone);
+    }
+    if (address !== undefined) {
+      updates.push('address = ?');
+      values.push(address);
+    }
+    if (dateOfBirth !== undefined) {
+      updates.push('date_of_birth = ?');
+      values.push(dateOfBirth);
+    }
+    if (emergencyContact !== undefined) {
+      updates.push('emergency_contact = ?');
+      values.push(emergencyContact);
+    }
+
+    if (updates.length > 0) {
+      updates.push('updated_at = NOW()');
+      values.push(req.user.userId);
+      
+      await connection.execute(
+        `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+        values
+      );
+    }
+
+    // Fetch updated user
+    const [updatedUsers] = await connection.execute(
+      'SELECT id, name, email, phone, role, address, date_of_birth as dateOfBirth, emergency_contact as emergencyContact, avatar, created_at as createdAt, updated_at as updatedAt FROM users WHERE id = ?',
+      [req.user.userId]
+    );
     
-    const { password, ...userProfile } = updatedUser;
     res.json({ 
       message: 'Profile updated successfully',
-      user: userProfile 
+      user: updatedUsers[0]
     });
   } catch (error) {
     console.error('Profile update error:', error);
