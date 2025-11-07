@@ -6,7 +6,7 @@ async function addDoctors() {
     console.log('🏥 Adding specialist doctors...\n');
 
     // Hash password for all doctors
-    const password = 'doctor123';
+    const password = '';
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const doctors = [
