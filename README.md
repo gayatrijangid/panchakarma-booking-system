@@ -110,19 +110,6 @@ panchakarma-booking-system/
 - Lucide React for icons
 - React Hot Toast for notifications
 
-## 🔧 Configuration
-
-### Backend (.env)
-```
-PORT=3002
-JWT_SECRET=panchakarma-super-secret-key-123456789
-NODE_ENV=development
-```
-
-### Frontend (.env)
-```
-REACT_APP_API_URL=http://localhost:3002/api
-```
 
 ## 📝 API Endpoints
 
@@ -146,57 +133,6 @@ REACT_APP_API_URL=http://localhost:3002/api
 - `GET /api/users/:id` - Get user details
 - `PUT /api/users/:id` - Update user profile
 
-## 🐛 Troubleshooting
 
-### Authentication Errors
-
-If you're getting "Login Failed" or "Register Failed" errors:
-
-1. **Make sure the backend server is running:**
-   ```bash
-   cd panchakarma-backend
-   npm start
-   ```
-   You should see: `🚀 Server is running on port 3002`
-
-2. **Check if port 3002 is accessible:**
-   Open http://localhost:3002/api/health in your browser
-
-3. **Clear browser storage:**
-   - Open Developer Tools (F12)
-   - Go to Application/Storage tab
-   - Clear Local Storage
-   - Refresh the page
-
-4. **Check console for errors:**
-   - Open Developer Tools (F12)
-   - Check Console tab for error messages
-
-### Common Issues
-
-**Issue:** Backend won't start
-- Make sure no other process is using port 3002
-- Check that all dependencies are installed: `npm install`
-
-**Issue:** Frontend can't connect to backend
-- Verify `.env` file exists in `panchakarma-react` folder
-- Check CORS settings in backend `index.js`
-
-**Issue:** Login works but gives 401 errors on other pages
-- JWT token might be expired or invalid
-- Clear local storage and login again
-
-## 📧 Support
-
-For issues or questions, please check:
-1. Console logs in browser (F12)
-2. Backend terminal for error messages
-3. Network tab in Developer Tools
-
-## 📄 License
-
-This project is for educational purposes.
-
----
 
 Made with 🌿 by Niramay Team
