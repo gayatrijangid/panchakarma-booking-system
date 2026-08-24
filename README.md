@@ -13,6 +13,22 @@ A comprehensive web application for managing Ayurvedic Panchakarma treatments, a
 
 <img width="1280" height="694" alt="WhatsApp Image 2026-08-24 at 10 40 56 PM" src="https://github.com/user-attachments/assets/0cf60928-ae10-4353-b598-82c346fe0006" />
 
+<img width="1280" height="697" alt="WhatsApp Image 2026-08-24 at 10 40 56 PM (1)" src="https://github.com/user-attachments/assets/c78d884d-806d-47ca-9254-2ed36d519287" />
+
+<img width="1280" height="699" alt="WhatsApp Image 2026-08-24 at 10 40 57 PM" src="https://github.com/user-attachments/assets/bfb2ec75-ca7e-4cfa-9d1d-7a7091bd66b0" />
+
+<img width="1280" height="700" alt="WhatsApp Image 2026-08-24 at 10 40 57 PM (1)" src="https://github.com/user-attachments/assets/3da20e63-143b-4bfe-a5f9-93e44dac683d" />
+
+<img width="1280" height="695" alt="WhatsApp Image 2026-08-24 at 10 40 57 PM (2)" src="https://github.com/user-attachments/assets/2240a8b2-0760-461c-8837-26297344efa9" />
+
+<img width="1280" height="697" alt="WhatsApp Image 2026-08-24 at 10 40 58 PM" src="https://github.com/user-attachments/assets/8cfd3ef3-fc35-41ea-a36d-72e1bb275222" />
+
+<img width="1280" height="696" alt="WhatsApp Image 2026-08-24 at 10 40 58 PM (1)" src="https://github.com/user-attachments/assets/f9d03328-056a-4b4d-a176-5f29b7eed941" />
+
+
+
+
+
 
 ## 🚀 Quick Start
 
