@@ -7,9 +7,12 @@ A comprehensive web application for managing Ayurvedic Panchakarma treatments, a
 - **User Authentication** - Secure login and signup with JWT
 - **Role-Based Access** - Admin, Doctor, and Patient dashboards
 - **Appointment Management** - Book and manage therapy sessions
-- **WhatsApp Notifications** - Automated appointment reminders
+- **Email Notifications** - Automated appointment reminders
 - **Therapy Catalog** - Browse Ayurvedic treatments
 - **Profile Management** - User profiles with medical history
+
+<img width="1280" height="694" alt="WhatsApp Image 2026-08-24 at 10 40 56 PM" src="https://github.com/user-attachments/assets/0cf60928-ae10-4353-b598-82c346fe0006" />
+
 
 ## 🚀 Quick Start
 
